@@ -1,0 +1,100 @@
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+export default function Home() {
+  const [idea, setIdea] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+
+  const handleSubmit = async () => {
+    if (!idea.trim()) return;
+    setLoading(true);
+    setResult(null);
+    setImageUrl(null);
+
+    const [brandRes, imageRes] = await Promise.all([
+      fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idea }),
+      }),
+      fetch("/api/logo", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: idea }),
+      })
+    ]);
+
+    const brandData = await brandRes.json();
+    const imageData = await imageRes.json();
+
+    setResult(brandData);
+    setImageUrl(imageData.url);
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen p-6 max-w-3xl mx-auto text-center">
+      <h1 className="text-4xl font-bold mb-4">Torne sua ideia mais Lovable 💡</h1>
+      <Input
+        placeholder="Descreva o que você quer criar (ex: uma loja de camisetas vintage)"
+        value={idea}
+        onChange={(e) => setIdea(e.target.value)}
+        className="mb-4"
+      />
+      <Button onClick={handleSubmit} disabled={loading}>
+        {loading ? "Gerando..." : "Make it lovable"}
+      </Button>
+
+      {result && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mt-10 text-left space-y-6"
+        >
+          <div>
+            <h2 className="text-2xl font-semibold">Nome da Marca</h2>
+            <p>{result.name}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Slogan</h2>
+            <p>{result.slogan}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Descrição</h2>
+            <p>{result.description}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Público-Alvo</h2>
+            <p>{result.target}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Tom de Voz</h2>
+            <p>{result.voice}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Valores da Marca</h2>
+            <p>{result.values}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Paleta de Cores</h2>
+            <p>{result.colors}</p>
+          </div>
+          <div>
+            <h2 className="text-2xl font-semibold">Fontes Sugeridas</h2>
+            <p>{result.fonts}</p>
+          </div>
+          {imageUrl && (
+            <div>
+              <h2 className="text-2xl font-semibold">Logotipo Gerado</h2>
+              <img src={imageUrl} alt="Logotipo AI" className="rounded-xl mt-4" />
+            </div>
+          )}
+        </motion.div>
+      )}
+    </div>
+  );
+}
